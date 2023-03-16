@@ -19,7 +19,7 @@ This way there is just no CORS problem at all.
 
 Separate nginx in the docker-compose actually is not needed, just for quick experiments.
 
-### Session
+### Auth Session - nginx config
 Play with session.cookie.renew and session.cookie.lifetime to setup session lifetime.
 
 You can set the cookies domain using authenticate() fourth argument!
@@ -44,14 +44,26 @@ In this case just restart it
 
 To make it work you need this settings in KeyCloack:
 
-0) login to KeyCloack adm console http://localhost/auth/ or http://localhost:3333 (see creds in docker-compose.yml) 
-1) Create realm `imagingcloak`
+0) login to KeyCloack adm console http://localhost:3333 (see creds in docker-compose.yml) 
+1) Create realm `imagingrealm` (left up corned, "Add realm" button in the drop-down)
 2) Create clients:
-   - `nginx`, Redirect URL `http://localhost:3002/*`, access-type: public, WebOrigins *
-   - `pacs`, Redirect URL `*`, access-type: confidential, RootURL http://127.0.0.1, BaseUrl /pacs-admin, WebOrigins *
-   - `nginx2`, Redirect URL `*`, access-type: public, WebOrigins http://127.0.0.1:4090/*, *
-   - `viewer`, Redirect URL `http://localhost*`, access-type: `confidential`, WebOrigins `+`
-3) add a secret key from the keycloak user pacs Credentials tab to the `openid-keycloak-secrets.env`
-4) add `user`, set password
+   - `imaging`, Redirect URL `*`, access-type: confidential, WebOrigins `+`
+3) add a secret key from the keycloak user pacs Credentials tab to the `openid-keycloak-secrets.env`, 
+var `OPENID_CLIENT_SECRET`
+4) create user with any name and set password in `Credentials` tab, you will user this user to get access to 
+resources protected by nginx with OpenIDC.
+5) restart nginx to read new secret key 
+
+       docker-compose stop viewer
+       docker-compose up -d
 
 
+### Links
+http://localhost/pacs-admin/  
+Orthang admin console
+you can upload some DICOM files here (`upload` button top right)
+`Select files to upload..` and do not forget to press `Start upload` - UI just genious :(
+http://localhost/
+OHIF viewer connected to the Orthanc
+http://localhost/pacs/series
+just example calling Orthanc API

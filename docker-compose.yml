@@ -1,4 +1,4 @@
-version: "3"
+version: "3.9"
 
 networks:
     cloakednet:
@@ -17,6 +17,16 @@ services:
             POSTGRES_DB: keycloak
             POSTGRES_USER: keycloak
             POSTGRES_PASSWORD: password
+        healthcheck:
+            test: pg_isready -d postgres
+            interval: 8s
+            timeout: 3s
+            retries: 2
+            start_period: 6s
+        deploy:
+            resources:
+                limits:
+                    memory: 256M
         ports:
             - 5432:5432
         networks:
@@ -36,7 +46,8 @@ services:
         ports:
             - 3333:8080
         depends_on:
-            - postgres
+            postgres:
+                condition: service_healthy
         networks:
             - cloakednet
 
