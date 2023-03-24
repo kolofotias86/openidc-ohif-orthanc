@@ -67,3 +67,11 @@ http://localhost/
 OHIF viewer connected to the Orthanc
 http://localhost/pacs/series
 just example calling Orthanc API
+
+### SSL Key
+In the repo included SSL key.
+DO NOT USE IT in production - the secret key is exposed in this repo.
+
+Regenerate it with
+
+   openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout nginxenv/ssl/nginx.key -out nginxenv/ssl/nginx.crt

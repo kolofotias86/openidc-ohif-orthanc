@@ -5,7 +5,10 @@ services:
     volumes:
         - ./nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf:ro
         - ./volumes/logs/nginx:/var/logs/nginx
+        - ./ssl/nginx.crt:/etc/ssl/nginx.crt
+        - ./ssl/nginx.key:/etc/ssl/nginx.key
     environment:
-        ENV_VAR:
+        ENV_VAR: "myval"
     ports:
       - '80:80'
+      - '443:443'
