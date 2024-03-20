@@ -49,8 +49,10 @@ Setup in Keycloak:
 
 0) Access Keycloak admin console at http://localhost:3333 (credentials in docker-compose.yml).
 1) Create realm `imagingrealm` (top left, "Add realm" in dropdown).
-2) Create clients:
-   - `imaging`, Redirect URL `*`, confidential, Web Origins `+`
+2) Create client `imaging`:
+   - `Redirect URL`: `*`
+   - `access-type:` confidential
+   - `Web Origins`: `+`
 3) Add secret key from Keycloak user PACS Credentials to `openid-keycloak-secrets.env`, var `OPENID_CLIENT_SECRET`.
 4) Create a user, set password in `Credentials`, to access nginx protected resources with OpenIDC.
 5) Restart nginx to apply new secret key.
