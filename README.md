@@ -1,77 +1,90 @@
-# OHIF viewer using PACS Server (Orthanc) protected by OpenID
+# OHIF Viewer Using PACS Server (Orthanc) Protected by OpenID
 
-We protect PACS Server with OpenID - for example with corporate SSO.
+We protect the PACS Server with OpenID, for example, with corporate SSO.
 
-Based on OpenResty (nginx + lua) and Keycloak as OpenID auth.
+It's based on OpenResty (nginx + lua) and Keycloak as the OpenID auth.
 
-Use https://github.com/zmartzone/lua-resty-openidc for authentication.
+We use https://github.com/zmartzone/lua-resty-openidc for authentication.
 
-Kind of quick and dirty solution but the main point - it just works 
-in contratry to all others that I found so far.
+It's a kind of quick and dirty solution, but the main point is - it just works, 
+contrary to all others that I've found so far.
 
 ### CORS
 
-Basic idea - we workaround CORS problem proxying all services as endpoints on
+The basic idea is we work around the CORS problem by proxying all services as endpoints on
 one host.
-All services are proxed from `viewer` which is actually a OpenResty + OHIV viewer.
+All services are proxied from `viewer`, which is actually OpenResty + OHIF viewer.
 
-This way there is just no CORS problem at all.
+This way, there's just no CORS problem at all.
 
-Separate nginx in the docker-compose actually is not needed, just for quick experiments.
+A separate nginx in the docker-compose is actually not needed; it's just for quick experiments.
 
-### Auth Session - nginx config
-Play with session.cookie.renew and session.cookie.lifetime to setup session lifetime.
+### Auth Session - Nginx Config
+Play with `session.cookie.renew` and `session.cookie.lifetime` to set up session lifetime.
 
-You can set the cookies domain using authenticate() fourth argument!
+You can set the cookie's domain using `authenticate()` fourth argument!
 
-    local session_opts = { cookie = { domain = ".mydomain.com" } }
+``` 
+local session_opts = { cookie = { domain = ".mydomain.com" } }
+```
 
 ### Start
 
-    docker-compose up --build
+```
+docker-compose up --build
+```
 
-Give it some time to start all containers and init KeyCloack DB, first time it could take
-up to minute.
-There is no special means to sync start so it could stuck, you will see that in logs
+Give it some time to start all containers and initialize Keycloak DB; the first time, it could take
+up to a minute.
+There's no special means to sync start, so it could get stuck; you'll see that in the logs.
 
-    docker-compose logs -f
+```
+docker-compose logs -f
+```
 
-In this case just restart it
+In this case, just restart it.
 
-    docker-compose restart
+```
+docker-compose restart
+```
 
-### KeyCloack
+### Keycloak
 
-To make it work you need this settings in KeyCloack:
+To make it work, you need these settings in Keycloak:
 
-0) login to KeyCloack adm console http://localhost:3333 (see creds in docker-compose.yml) 
-1) Create realm `imagingrealm` (left up corned, "Add realm" button in the drop-down)
+0) Log in to Keycloak admin console http://localhost:3333 (see creds in docker-compose.yml).
+1) Create realm `imagingrealm` (left upper corner, "Add realm" button in the dropdown).
 2) Create clients:
-   - `imaging`, Redirect URL `*`, access-type: confidential, WebOrigins `+`
-3) add a secret key from the keycloak user pacs Credentials tab to the `openid-keycloak-secrets.env`, 
-var `OPENID_CLIENT_SECRET`
-4) create user with any name and set password in `Credentials` tab, you will user this user to get access to 
+   - `imaging`, Redirect URL `*`, access type: confidential, Web Origins `+`
+3) Add a secret key from the Keycloak user PACS Credentials tab to the `openid-keycloak-secrets.env`, 
+var `OPENID_CLIENT_SECRET`.
+4) Create a user with any name and set a password in the `Credentials` tab; you will use this user to get access to 
 resources protected by nginx with OpenIDC.
-5) restart nginx to read new secret key 
+5) Restart nginx to read the new secret key.
 
-       docker-compose stop viewer
-       docker-compose up -d
-
+```
+docker-compose stop viewer
+docker-compose up -d
+```
 
 ### Links
 http://localhost/pacs-admin/  
-Orthang admin console
-you can upload some DICOM files here (`upload` button top right)
-`Select files to upload..` and do not forget to press `Start upload` - UI just genious :(
-http://localhost/
-OHIF viewer connected to the Orthanc
-http://localhost/pacs/series
-just example calling Orthanc API
+Orthanc admin console.
+You can upload some DICOM files here (`upload` button top right).
+`Select files to upload..` and don't forget to press `Start upload` - UI is just genius :(
+
+http://localhost/  
+OHIF viewer connected to Orthanc.
+
+http://localhost/pacs/series  
+Just an example calling Orthanc API.
 
 ### SSL Key
-In the repo included SSL key.
+An SSL key is included in the repo.
 DO NOT USE IT in production - the secret key is exposed in this repo.
 
-Regenerate it with
+Regenerate it with:
 
-   openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout nginxenv/ssl/nginx.key -out nginxenv/ssl/nginx.crt
+```
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout nginxenv/ssl/nginx.key -out nginxenv/ssl/nginx.crt
+```
