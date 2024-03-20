@@ -1,30 +1,26 @@
 # OHIF Viewer Using PACS Server (Orthanc) Protected by OpenID
 
-We protect the PACS Server with OpenID, for example, with corporate SSO.
+We protect the PACS Server with OpenID, like corporate SSO.
 
-It's based on OpenResty (nginx + lua) and Keycloak as the OpenID auth.
+Based on OpenResty (nginx + lua) and Keycloak for OpenID auth.
 
-We use https://github.com/zmartzone/lua-resty-openidc for authentication.
+Use https://github.com/zmartzone/lua-resty-openidc for authentication.
 
-It's a kind of quick and dirty solution, but the main point is - it just works, 
-contrary to all others that I've found so far.
+A simple solution that works well, unlike others we've tried.
 
 ### CORS
 
-The basic idea is we work around the CORS problem by proxying all services as endpoints on
-one host.
-All services are proxied from `viewer`, which is actually OpenResty + OHIF viewer.
+We solve CORS issues by proxying all services through a single host.
+Services are proxied from `viewer`, which combines OpenResty and OHIF viewer.
 
-This way, there's just no CORS problem at all.
-
-A separate nginx in the docker-compose is actually not needed; it's just for quick experiments.
+This eliminates CORS problems.
 
 ### Auth Session - Nginx Config
-Play with `session.cookie.renew` and `session.cookie.lifetime` to set up session lifetime.
+Adjust `session.cookie.renew` and `session.cookie.lifetime` for session timing.
 
-You can set the cookie's domain using `authenticate()` fourth argument!
+Set cookie domain with `authenticate()`'s fourth argument:
 
-``` 
+```
 local session_opts = { cookie = { domain = ".mydomain.com" } }
 ```
 
@@ -34,15 +30,14 @@ local session_opts = { cookie = { domain = ".mydomain.com" } }
 docker-compose up --build
 ```
 
-Give it some time to start all containers and initialize Keycloak DB; the first time, it could take
-up to a minute.
-There's no special means to sync start, so it could get stuck; you'll see that in the logs.
+Allow time for container startup and Keycloak DB initialization. Initial start may take a minute.
+No special sync for start; if it hangs, check logs:
 
 ```
 docker-compose logs -f
 ```
 
-In this case, just restart it.
+Restart if needed:
 
 ```
 docker-compose restart
@@ -50,17 +45,15 @@ docker-compose restart
 
 ### Keycloak
 
-To make it work, you need these settings in Keycloak:
+Setup in Keycloak:
 
-0) Log in to Keycloak admin console http://localhost:3333 (see creds in docker-compose.yml).
-1) Create realm `imagingrealm` (left upper corner, "Add realm" button in the dropdown).
+0) Access Keycloak admin console at http://localhost:3333 (credentials in docker-compose.yml).
+1) Create realm `imagingrealm` (top left, "Add realm" in dropdown).
 2) Create clients:
-   - `imaging`, Redirect URL `*`, access type: confidential, Web Origins `+`
-3) Add a secret key from the Keycloak user PACS Credentials tab to the `openid-keycloak-secrets.env`, 
-var `OPENID_CLIENT_SECRET`.
-4) Create a user with any name and set a password in the `Credentials` tab; you will use this user to get access to 
-resources protected by nginx with OpenIDC.
-5) Restart nginx to read the new secret key.
+   - `imaging`, Redirect URL `*`, confidential, Web Origins `+`
+3) Add secret key from Keycloak user PACS Credentials to `openid-keycloak-secrets.env`, var `OPENID_CLIENT_SECRET`.
+4) Create a user, set password in `Credentials`, to access nginx protected resources with OpenIDC.
+5) Restart nginx to apply new secret key.
 
 ```
 docker-compose stop viewer
@@ -68,22 +61,18 @@ docker-compose up -d
 ```
 
 ### Links
-http://localhost/pacs-admin/  
-Orthanc admin console.
-You can upload some DICOM files here (`upload` button top right).
-`Select files to upload..` and don't forget to press `Start upload` - UI is just genius :(
-
-http://localhost/  
-OHIF viewer connected to Orthanc.
-
-http://localhost/pacs/series  
-Just an example calling Orthanc API.
+- Admin Console: http://localhost/pacs-admin/  
+   Upload DICOM files here (`upload` button top right). Don't forget `Start upload`.
+- OHIF Viewer: http://localhost/  
+   Connected to Orthanc.
+- API Example: http://localhost/pacs/series  
+   Calls Orthanc API.
 
 ### SSL Key
-An SSL key is included in the repo.
-DO NOT USE IT in production - the secret key is exposed in this repo.
+SSL key included for development.
+DO NOT USE in production. Secret key is public in this repo.
 
-Regenerate it with:
+Regenerate for production:
 
 ```
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout nginxenv/ssl/nginx.key -out nginxenv/ssl/nginx.crt
