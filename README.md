@@ -1,81 +1,82 @@
-# OHIF Viewer Using PACS Server (Orthanc) Protected by OpenID
+# OHIF Viewer with OpenID-Protected PACS Server (Orthanc)
 
-We protect the PACS Server with OpenID, like corporate SSO.
+This project implements a secure medical imaging viewer setup that protects the PACS Server using OpenID authentication (compatible with corporate SSO). The solution uses OpenResty (nginx + lua) and Keycloak for OpenID authentication, leveraging the [lua-resty-openidc](https://github.com/zmartzone/lua-resty-openidc) library.
 
-Based on OpenResty (nginx + lua) and Keycloak for OpenID auth.
+## Features
 
-Use https://github.com/zmartzone/lua-resty-openidc for authentication.
+- Single-host deployment eliminating CORS issues
+- Corporate SSO integration via OpenID
+- Streamlined service proxying through OpenResty
+- OHIF Viewer integration with Orthanc PACS
 
-A simple solution that works well, unlike others we've tried.
+## Architecture
 
-### CORS
+### CORS Handling
+All services are proxied through a single host (`viewer` container), which combines OpenResty and the OHIF viewer. This approach completely eliminates CORS-related issues by having all services available under one domain.
 
-We solve CORS issues by proxying all services through a single host.
-Services are proxied from `viewer`, which combines OpenResty and OHIF viewer.
+### Authentication Configuration
+Session timing can be configured through the nginx configuration:
+- Use `session.cookie.renew` to set renewal timing
+- Use `session.cookie.lifetime` to set session duration
 
-This eliminates CORS problems.
-
-### Auth Session - Nginx Config
-Adjust `session.cookie.renew` and `session.cookie.lifetime` for session timing.
-
-Set cookie domain with `authenticate()`'s fourth argument:
-
-```
+To set a custom cookie domain:
+```lua
 local session_opts = { cookie = { domain = ".mydomain.com" } }
 ```
 
-### Start
+## Deployment
 
-```
+### Quick Start
+```bash
 docker-compose up --build
 ```
 
-Allow time for container startup and Keycloak DB initialization. Initial start may take a minute.
-No special sync for start; if it hangs, check logs:
-
-```
+**Note:** Initial startup may take a minute while Keycloak initializes its database. If the startup appears to hang, check the logs:
+```bash
 docker-compose logs -f
 ```
 
-Restart if needed:
-
-```
+If needed, restart the stack:
+```bash
 docker-compose restart
 ```
 
-### Keycloak
+### Keycloak Configuration
 
-Setup in Keycloak:
+1. Access the Keycloak admin console at http://localhost:3333 (credentials in docker-compose.yml)
+2. Create a new realm named `imagingrealm`:
+   - Use the realm dropdown (top left)
+   - Select "Add realm"
+3. Create a client named `imaging` with the following settings:
+   - Redirect URL: `*`
+   - Access Type: `confidential`
+   - Web Origins: `+`
+4. Copy the client secret from Keycloak to `openid-keycloak-secrets.env`:
+   - Set as `OPENID_CLIENT_SECRET`
+5. Create a user account and set their password in the "Credentials" tab
+6. Restart nginx to apply the new configuration:
+   ```bash
+   docker-compose stop viewer
+   docker-compose up -d
+   ```
 
-0) Access Keycloak admin console at http://localhost:3333 (credentials in docker-compose.yml).
-1) Create realm `imagingrealm` (top left, "Add realm" in dropdown).
-2) Create client `imaging`:
-   - `Redirect URL`: `*`
-   - `access-type:` confidential
-   - `Web Origins`: `+`
-3) Add secret key from Keycloak user PACS Credentials to `openid-keycloak-secrets.env`, var `OPENID_CLIENT_SECRET`.
-4) Create a user, set password in `Credentials`, to access nginx protected resources with OpenIDC.
-5) Restart nginx to apply new secret key.
+## Access Points
 
-```
-docker-compose stop viewer
-docker-compose up -d
-```
+- OHIF Viewer: http://localhost/
+  - Main viewer interface connected to Orthanc
+- Admin Console: http://localhost/pacs-admin/
+  - Use to upload DICOM files (upload button in top right corner)
+- API Example: http://localhost/pacs/series
+  - Demonstrates Orthanc API access
 
-### Links
-- Admin Console: http://localhost/pacs-admin/  
-   Upload DICOM files here (`upload` button top right). Don't forget `Start upload`.
-- OHIF Viewer: http://localhost/  
-   Connected to Orthanc.
-- API Example: http://localhost/pacs/series  
-   Calls Orthanc API.
+## Security Notes
 
-### SSL Key
-SSL key included for development.
-DO NOT USE in production. Secret key is public in this repo.
+### SSL Configuration
+A development SSL key is included in this repository. **DO NOT USE IN PRODUCTION**.
 
-Regenerate for production:
-
-```
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout nginxenv/ssl/nginx.key -out nginxenv/ssl/nginx.crt
+Generate a new SSL key pair for production:
+```bash
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout nginxenv/ssl/nginx.key \
+    -out nginxenv/ssl/nginx.crt
 ```
